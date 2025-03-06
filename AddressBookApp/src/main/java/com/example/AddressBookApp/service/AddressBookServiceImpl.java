@@ -2,74 +2,71 @@ package com.example.AddressBookApp.service;
 
 import com.example.AddressBookApp.DTOs.AddressBookDTO;
 import com.example.AddressBookApp.model.AddressBook;
+import com.example.AddressBookApp.exception.ResourceNotFoundException;
+import com.example.AddressBookApp.repository.AddressBookRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class AddressBookServiceImpl implements AddressBookService {
 
-    // In-memory data storage
-    private List<AddressBook> addressBooks = new ArrayList<>();
-    private Long nextId = 1L;
+    @Autowired
+    private AddressBookRepository addressBookRepository;
 
     @Override
     public List<AddressBookDTO> getAllAddresses() {
-        return addressBooks.stream()
+        return addressBookRepository.findAll().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
     public AddressBookDTO getAddressById(Long id) {
-        Optional<AddressBook> addressBook = addressBooks.stream()
-                .filter(a -> a.getId().equals(id))
-                .findFirst();
-
-        return addressBook.map(this::convertToDTO).orElse(null);
+        AddressBook addressBook = addressBookRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("AddressBook", "id", id));
+        return convertToDTO(addressBook);
     }
 
     @Override
     public AddressBookDTO createAddress(AddressBookDTO addressBookDTO) {
         AddressBook addressBook = convertToEntity(addressBookDTO);
-        addressBook.setId(nextId++);
-        addressBooks.add(addressBook);
-        return convertToDTO(addressBook);
+        // Let the database handle ID generation
+        addressBook.setId(null);
+        AddressBook savedAddress = addressBookRepository.save(addressBook);
+        return convertToDTO(savedAddress);
     }
 
     @Override
     public AddressBookDTO updateAddress(Long id, AddressBookDTO addressBookDTO) {
-        Optional<AddressBook> existingAddress = addressBooks.stream()
-                .filter(a -> a.getId().equals(id))
-                .findFirst();
+        // Check if address exists
+        AddressBook existingAddress = addressBookRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("AddressBook", "id", id));
 
-        if (existingAddress.isPresent()) {
-            AddressBook addressBook = existingAddress.get();
-            addressBook.setName(addressBookDTO.getName());
-            addressBook.setAddress(addressBookDTO.getAddress());
-            addressBook.setCity(addressBookDTO.getCity());
-            addressBook.setState(addressBookDTO.getState());
-            addressBook.setZip(addressBookDTO.getZip());
-            addressBook.setPhone(addressBookDTO.getPhone());
-            addressBook.setEmail(addressBookDTO.getEmail());
+        // Update the existing address with new values
+        AddressBook addressBook = convertToEntity(addressBookDTO);
+        addressBook.setId(id);
+        // Preserve creation timestamp
+        addressBook.setCreatedAt(existingAddress.getCreatedAt());
 
-            return convertToDTO(addressBook);
-        }
-
-        return null;
+        AddressBook updatedAddress = addressBookRepository.save(addressBook);
+        return convertToDTO(updatedAddress);
     }
 
     @Override
     public void deleteAddress(Long id) {
-        addressBooks.removeIf(address -> address.getId().equals(id));
+        // Check if address exists
+        addressBookRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("AddressBook", "id", id));
+
+        addressBookRepository.deleteById(id);
     }
 
     // Helper methods to convert between Entity and DTO
     private AddressBookDTO convertToDTO(AddressBook addressBook) {
-        return new AddressBookDTO(
+        AddressBookDTO dto = new AddressBookDTO(
                 addressBook.getId(),
                 addressBook.getName(),
                 addressBook.getAddress(),
@@ -79,10 +76,13 @@ public class AddressBookServiceImpl implements AddressBookService {
                 addressBook.getPhone(),
                 addressBook.getEmail()
         );
+        dto.setCreatedAt(addressBook.getCreatedAt());
+        dto.setUpdatedAt(addressBook.getUpdatedAt());
+        return dto;
     }
 
     private AddressBook convertToEntity(AddressBookDTO dto) {
-        return new AddressBook(
+        AddressBook entity = new AddressBook(
                 dto.getId(),
                 dto.getName(),
                 dto.getAddress(),
@@ -92,5 +92,7 @@ public class AddressBookServiceImpl implements AddressBookService {
                 dto.getPhone(),
                 dto.getEmail()
         );
+        // Don't set timestamps here - let @PrePersist and @PreUpdate handle it
+        return entity;
     }
 }

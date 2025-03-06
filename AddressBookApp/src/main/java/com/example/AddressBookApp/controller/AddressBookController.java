@@ -2,61 +2,56 @@ package com.example.AddressBookApp.controller;
 
 import com.example.AddressBookApp.DTOs.AddressBookDTO;
 import com.example.AddressBookApp.model.AddressBook;
+import com.example.AddressBookApp.service.AddressBookService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
+import javax.validation.Valid;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/addressbook")
+@CrossOrigin(origins = "*")
+@Validated
 public class AddressBookController {
+
+    @Autowired
+    private AddressBookService addressBookService;
 
     @GetMapping({"", "/"})
     public ResponseEntity<List<AddressBookDTO>> getAllAddresses() {
-        // Converting model to DTO
-        List<AddressBookDTO> addressDTOs = new ArrayList<>();
-        addressDTOs.add(new AddressBookDTO(1L, "Krishna", "G-Block", "Mathura", "NY", "10001", "555-1234", "krishnagopalsingh587@gmail.com"));
-        addressDTOs.add(new AddressBookDTO(2L, "Divyansu", "H-Block", "Mathura", "CA", "90001", "555-5678", "divyanshur0603@gmail.com"));
-
-        return new ResponseEntity<>(addressDTOs, HttpStatus.OK);
+        List<AddressBookDTO> addresses = addressBookService.getAllAddresses();
+        return new ResponseEntity<>(addresses, HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<AddressBookDTO> getAddressById(@PathVariable Long id) {
-
-        AddressBookDTO addressDTO = new AddressBookDTO(id, "John Doe", "123 Main St", "New York", "NY", "10001", "555-1234", "john@example.com");
+        AddressBookDTO addressDTO = addressBookService.getAddressById(id);
         return new ResponseEntity<>(addressDTO, HttpStatus.OK);
     }
 
     @PostMapping({"", "/"})
-    public ResponseEntity<AddressBookDTO> createAddress(@RequestBody AddressBookDTO addressDTO) {
-        // Simulating creating a new address
-        AddressBook addressBook = new AddressBook();
-        addressBook.setId(addressDTO.getId());
-        addressBook.setName(addressDTO.getName());
-        addressBook.setAddress(addressDTO.getAddress());
-        addressBook.setCity(addressDTO.getCity());
-        addressBook.setState(addressDTO.getState());
-        addressBook.setZip(addressDTO.getZip());
-        addressBook.setPhone(addressDTO.getPhone());
-        addressBook.setEmail(addressDTO.getEmail());
-
-        // Simulating DTO conversion of saved entity
-        addressDTO.setId(3L); // Simulating ID generation
-
-        return new ResponseEntity<>(addressDTO, HttpStatus.CREATED);
+    public ResponseEntity<AddressBookDTO> createAddress(@Valid @RequestBody AddressBookDTO addressDTO) {
+        AddressBookDTO createdAddress = addressBookService.createAddress(addressDTO);
+        return new ResponseEntity<>(createdAddress, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<AddressBookDTO> updateAddress(@PathVariable Long id, @RequestBody AddressBookDTO addressDTO) {
-        addressDTO.setId(id);
-        return new ResponseEntity<>(addressDTO, HttpStatus.OK);
+    public ResponseEntity<AddressBookDTO> updateAddress(
+            @PathVariable Long id,
+            @Valid @RequestBody AddressBookDTO addressDTO) {
+        AddressBookDTO updatedAddress = addressBookService.updateAddress(id, addressDTO);
+        return new ResponseEntity<>(updatedAddress, HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteAddress(@PathVariable Long id) {
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    public ResponseEntity<Map<String, String>> deleteAddress(@PathVariable Long id) {
+        addressBookService.deleteAddress(id);
+        return new ResponseEntity<>(Map.of("message", "Address deleted successfully"), HttpStatus.OK);
     }
 }
