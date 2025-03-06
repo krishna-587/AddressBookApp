@@ -15,7 +15,7 @@ public class AddressBookController {
 
     @GetMapping({"", "/"})
     public ResponseEntity<List<AddressBookDTO>> getAllAddresses() {
-        // Converting model to DTO - example for UC1
+        // Converting model to DTO
         List<AddressBookDTO> addressDTOs = new ArrayList<>();
         addressDTOs.add(new AddressBookDTO(1L, "Krishna", "G-Block", "Mathura", "NY", "10001", "555-1234", "krishnagopalsingh587@gmail.com"));
         addressDTOs.add(new AddressBookDTO(2L, "Divyansu", "H-Block", "Mathura", "CA", "90001", "555-5678", "divyanshur0603@gmail.com"));
@@ -25,14 +25,14 @@ public class AddressBookController {
 
     @GetMapping("/{id}")
     public ResponseEntity<AddressBookDTO> getAddressById(@PathVariable Long id) {
-        // Example for UC1
+
         AddressBookDTO addressDTO = new AddressBookDTO(id, "John Doe", "123 Main St", "New York", "NY", "10001", "555-1234", "john@example.com");
         return new ResponseEntity<>(addressDTO, HttpStatus.OK);
     }
 
     @PostMapping({"", "/"})
     public ResponseEntity<AddressBookDTO> createAddress(@RequestBody AddressBookDTO addressDTO) {
-        // Simulating creating a new address - UC1
+        // Simulating creating a new address
         AddressBook addressBook = new AddressBook();
         addressBook.setId(addressDTO.getId());
         addressBook.setName(addressDTO.getName());
@@ -51,14 +51,12 @@ public class AddressBookController {
 
     @PutMapping("/{id}")
     public ResponseEntity<AddressBookDTO> updateAddress(@PathVariable Long id, @RequestBody AddressBookDTO addressDTO) {
-        // Simulating update - UC1
         addressDTO.setId(id);
         return new ResponseEntity<>(addressDTO, HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAddress(@PathVariable Long id) {
-        // Simple delete response - UC1
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }
